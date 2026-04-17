@@ -1,0 +1,34 @@
+# macOS
+.DS_Store
+
+# Build and distribution directories
+build/
+out/
+dist/
+
+# CMake artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+CTestTestfile.cmake
+Testing/
+
+# Binary outputs
+*.exe
+*.app
+*.AppImage
+app
+
+# Logs and temp files
+logs/
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# IDE/editor
+.idea/
+.vscode/*.code-workspace

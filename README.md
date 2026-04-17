@@ -2,9 +2,9 @@
 
 Beginner-friendly Linux learning desktop app.
 
-[![Download for macOS](https://img.shields.io/badge/Download-macOS-black?style=for-the-badge&logo=apple)](https://github.com/linuxlabx/linuxlabx/releases/latest/download/LinuxLabX-mac.dmg)
-[![Download for Windows](https://img.shields.io/badge/Download-Windows-0078D6?style=for-the-badge&logo=windows)](https://github.com/linuxlabx/linuxlabx/releases/latest/download/LinuxLabX-win.exe)
-[![Download for Linux](https://img.shields.io/badge/Download-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/linuxlabx/linuxlabx/releases/latest/download/LinuxLabX-linux.AppImage)
+[![Download for macOS](https://img.shields.io/badge/Download-macOS-black?style=for-the-badge&logo=apple)](https://github.com/Iankitsinghak/LinuxLabX/releases/latest/download/LinuxLabX-mac.dmg)
+[![Download for Windows](https://img.shields.io/badge/Download-Windows-0078D6?style=for-the-badge&logo=windows)](https://github.com/Iankitsinghak/LinuxLabX/releases/latest/download/LinuxLabX-win.exe)
+[![Download for Linux](https://img.shields.io/badge/Download-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/Iankitsinghak/LinuxLabX/releases/latest/download/LinuxLabX-linux.AppImage)
 
 ## Screenshots
 
@@ -22,19 +22,19 @@ Beginner-friendly Linux learning desktop app.
 
 ### macOS (DMG)
 
-1. Download [LinuxLabX-mac.dmg](https://github.com/linuxlabx/linuxlabx/releases/latest/download/LinuxLabX-mac.dmg)
+1. Download [LinuxLabX-mac.dmg](https://github.com/Iankitsinghak/LinuxLabX/releases/latest/download/LinuxLabX-mac.dmg)
 2. Open the DMG
 3. Drag LinuxLabX into Applications
 
 ### Windows (EXE)
 
-1. Download [LinuxLabX-win.exe](https://github.com/linuxlabx/linuxlabx/releases/latest/download/LinuxLabX-win.exe)
+1. Download [LinuxLabX-win.exe](https://github.com/Iankitsinghak/LinuxLabX/releases/latest/download/LinuxLabX-win.exe)
 2. Run installer
 3. Launch LinuxLabX from Start Menu
 
 ### Linux (AppImage)
 
-1. Download [LinuxLabX-linux.AppImage](https://github.com/linuxlabx/linuxlabx/releases/latest/download/LinuxLabX-linux.AppImage)
+1. Download [LinuxLabX-linux.AppImage](https://github.com/Iankitsinghak/LinuxLabX/releases/latest/download/LinuxLabX-linux.AppImage)
 2. Make executable:
 	```bash
 	chmod +x LinuxLabX-linux.AppImage

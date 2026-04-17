@@ -211,7 +211,7 @@ struct UpdateInfo {
 UpdateInfo checkForUpdate(const std::string& currentVersion) {
     UpdateInfo result;
     QNetworkAccessManager manager;
-    QNetworkRequest request(QUrl("https://api.github.com/repos/linuxlabx/linuxlabx/releases/latest"));
+    QNetworkRequest request(QUrl("https://api.github.com/repos/Iankitsinghak/LinuxLabX/releases/latest"));
     request.setRawHeader("User-Agent", "LinuxLabX");
 
     QNetworkReply* reply = manager.get(request);

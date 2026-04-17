@@ -1,0 +1,7 @@
+{
+  "code-runner.runInTerminal": true,
+  "code-runner.clearPreviousOutput": true,
+  "code-runner.executorMap": {
+    "cpp": "cd $dir && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release --parallel && if [[ -x build/LinuxLabX.app/Contents/MacOS/LinuxLabX ]]; then build/LinuxLabX.app/Contents/MacOS/LinuxLabX; elif [[ -x build/LinuxLabX ]]; then build/LinuxLabX; elif [[ -x build/Release/LinuxLabX.exe ]]; then build/Release/LinuxLabX.exe; elif [[ -x build/LinuxLabX.exe ]]; then build/LinuxLabX.exe; else echo 'LinuxLabX executable not found'; fi"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CMake Configure",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["-S", ".", "-B", "build", "-DCMAKE_BUILD_TYPE=Release"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake Build",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "build", "--config", "Release", "--parallel"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "dependsOn": "CMake Configure"
+    },
+    {
+      "label": "Run LinuxLabX",
+      "type": "shell",
+      "command": "zsh",
+      "args": [
+        "-lc",
+        "if [[ -x build/LinuxLabX.app/Contents/MacOS/LinuxLabX ]]; then build/LinuxLabX.app/Contents/MacOS/LinuxLabX; elif [[ -x build/LinuxLabX ]]; then build/LinuxLabX; elif [[ -x build/Release/LinuxLabX.exe ]]; then build/Release/LinuxLabX.exe; elif [[ -x build/LinuxLabX.exe ]]; then build/LinuxLabX.exe; else echo 'LinuxLabX executable not found. Run CMake Build first.'; exit 1; fi"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "CMake Build",
+      "problemMatcher": []
+    }
+  ]
+}

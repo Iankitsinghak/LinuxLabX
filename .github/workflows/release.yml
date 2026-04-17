@@ -1,0 +1,158 @@
+name: Build and Release LinuxLabX
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            artifact_name: LinuxLabX-mac
+            artifact_file: dist/LinuxLabX-mac.dmg
+          - os: windows-latest
+            artifact_name: LinuxLabX-win
+            artifact_file: dist/LinuxLabX-win.exe
+          - os: ubuntu-latest
+            artifact_name: LinuxLabX-linux
+            artifact_file: dist/LinuxLabX-linux.AppImage
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.6.3"
+          cache: true
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libxkbcommon-x11-0 libfuse2 wget
+
+      - name: Install Windows dependencies
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install nsis -y
+
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Smoke test on macOS
+        if: runner.os == 'macOS'
+        run: |
+          cd build
+          ./LinuxLabX.app/Contents/MacOS/LinuxLabX --version
+
+      - name: Smoke test on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (Test-Path "./build/Release/LinuxLabX.exe") {
+            ./build/Release/LinuxLabX.exe --version
+          } elseif (Test-Path "./build/LinuxLabX.exe") {
+            ./build/LinuxLabX.exe --version
+          } else {
+            throw "LinuxLabX.exe not found for smoke test"
+          }
+
+      - name: Deploy and package on macOS
+        if: runner.os == 'macOS'
+        run: |
+          APP_BUNDLE="build/LinuxLabX.app"
+          if [ ! -d "$APP_BUNDLE" ]; then
+            APP_BUNDLE="build/Release/LinuxLabX.app"
+          fi
+          macdeployqt "$APP_BUNDLE"
+          bash packaging/macos/create-dmg.sh "$APP_BUNDLE" "dist/LinuxLabX-mac.dmg"
+
+      - name: Deploy and package on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          ./packaging/windows/package.ps1 -BuildDir build -DistDir dist -Config Release -AppVersion "${{ github.ref_name }}"
+
+      - name: Deploy and package on Linux
+        if: runner.os == 'Linux'
+        run: |
+          bash packaging/linux/build-appimage.sh build dist
+          cp dist/LinuxLabX-x86_64.AppImage dist/LinuxLabX-linux.AppImage
+
+      - name: Smoke test on Linux AppImage
+        if: runner.os == 'Linux'
+        run: |
+          cp ./dist/LinuxLabX-x86_64.AppImage ./LinuxLabX.AppImage
+          chmod +x ./LinuxLabX.AppImage
+          ./LinuxLabX.AppImage --appimage-extract-and-run --version
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_file }}
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate release notes
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          {
+            echo "## LinuxLabX ${TAG}"
+            echo
+            awk -v tag="${TAG}" '
+              $0 ~ "^## " tag "$" { in_section=1; next }
+              /^## v/ && in_section { exit }
+              in_section { print }
+            ' CHANGELOG.md
+          } > release-notes.md
+
+          if ! grep -q "^- " release-notes.md; then
+            {
+              echo "## LinuxLabX ${TAG}"
+              echo
+              cat CHANGELOG.md
+            } > release-notes.md
+          fi
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: LinuxLabX ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          body_path: release-notes.md
+          generate_release_notes: true
+          files: |
+            release-artifacts/LinuxLabX-mac/LinuxLabX-mac.dmg
+            release-artifacts/LinuxLabX-win/LinuxLabX-win.exe
+            release-artifacts/LinuxLabX-linux/LinuxLabX-linux.AppImage

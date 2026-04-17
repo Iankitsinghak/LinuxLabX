@@ -3,13 +3,15 @@ name: Build and Release LinuxLabX
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
+  workflow_dispatch:
 
 jobs:
   build:
+    name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
@@ -17,32 +19,126 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Install Qt (IMPORTANT FIX)
       - name: Install Qt
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
         with:
-          version: '6.5.0'
-          host: ${{ runner.os }}
+          version: "6.5.0"
+          host: ${{ matrix.os == 'ubuntu-latest' && 'linux' || matrix.os == 'windows-latest' && 'windows' || 'mac' }}
           target: desktop
-          modules: 'qtbase qttools'
+          modules: "qtbase qttools"
+          cache: true
 
       - name: Setup CMake
         uses: lukka/get-cmake@latest
 
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libxkbcommon-x11-0 \
+            libxcb-cursor0 \
+            libxcb-randr0 \
+            libxcb-shape0 \
+            libxcb-xfixes0 \
+            libfuse2 \
+            wget
+
+      - name: Debug Qt install path
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v qmake
+          qmake -v
+          QT_PREFIX="$(qmake -query QT_INSTALL_PREFIX)"
+          echo "QT_INSTALL_PREFIX=${QT_PREFIX}"
+          echo "CMAKE_PREFIX_PATH=${QT_PREFIX}" >> "$GITHUB_ENV"
+
       - name: Configure
         run: |
-          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH"
+
+      - name: Debug CMake configure output
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -E "CMAKE_PREFIX_PATH|Qt6_DIR|Qt6_FOUND|Qt5_FOUND" build/CMakeCache.txt || true
 
       - name: Build
         run: |
-          cmake --build build --config Release
+          cmake --build build --config Release --parallel
 
-      - name: Check binary exists
+      - name: Verify binary exists
+        shell: bash
         run: |
-          ls build
+          set -euo pipefail
+          if [[ -x build/LinuxLabX.app/Contents/MacOS/LinuxLabX ]]; then
+            echo "Found macOS app bundle executable"
+          elif [[ -x build/LinuxLabX ]]; then
+            echo "Found Linux executable"
+          elif [[ -f build/Release/LinuxLabX.exe ]]; then
+            echo "Found Windows Release executable"
+          elif [[ -f build/LinuxLabX.exe ]]; then
+            echo "Found Windows executable"
+          else
+            echo "LinuxLabX executable not found"
+            exit 1
+          fi
+
+      - name: Package artifact (macOS)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          APP_BUNDLE="build/LinuxLabX.app"
+          if [[ ! -d "$APP_BUNDLE" ]]; then
+            APP_BUNDLE="build/Release/LinuxLabX.app"
+          fi
+          macdeployqt "$APP_BUNDLE"
+          bash packaging/macos/create-dmg.sh "$APP_BUNDLE" "dist/LinuxLabX-mac.dmg"
+
+      - name: Package artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          ./packaging/windows/package.ps1 -BuildDir build -DistDir dist -Config Release -AppVersion "${{ github.ref_name }}"
+
+      - name: Package artifact (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash packaging/linux/build-appimage.sh build dist
+          cp dist/LinuxLabX-x86_64.AppImage dist/LinuxLabX-linux.AppImage
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: LinuxLabX-${{ matrix.os }}
-          path: build
+          path: |
+            dist/*.dmg
+            dist/*.exe
+            dist/*.AppImage
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/LinuxLabX-macos-latest/LinuxLabX-mac.dmg
+            artifacts/LinuxLabX-windows-latest/LinuxLabX-win.exe
+            artifacts/LinuxLabX-ubuntu-latest/LinuxLabX-linux.AppImage

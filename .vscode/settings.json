@@ -1,4 +1,5 @@
 {
+  "cmake.cmakePath": "/usr/local/bin/cmake",
   "code-runner.runInTerminal": true,
   "code-runner.clearPreviousOutput": true,
   "code-runner.executorMap": {

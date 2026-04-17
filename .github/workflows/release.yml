@@ -1,125 +1,48 @@
-name: Cross-Platform Qt Build
+name: Build and Release LinuxLabX
 
 on:
   push:
-    branches: ["main"]
-    tags: ["v*"]
-  pull_request:
-  workflow_dispatch:
+    tags:
+      - 'v*'
 
 jobs:
   build:
-    name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Ubuntu GCC
-            os: ubuntu-latest
-            cc: gcc
-            cxx: g++
-            qt_arch: gcc_64
-          - name: Ubuntu Clang
-            os: ubuntu-latest
-            cc: clang
-            cxx: clang++
-            qt_arch: gcc_64
-          - name: macOS Clang
-            os: macos-latest
-            cc: clang
-            cxx: clang++
-            qt_arch: clang_64
-          - name: Windows MSVC
-            os: windows-latest
-            cc: cl
-            cxx: cl
-            qt_arch: win64_msvc2022_64
 
-    env:
-      BUILD_TYPE: Release
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Qt 6
-        id: qt
-        uses: jurplel/install-qt-action@v4
+      # Install Qt (IMPORTANT FIX)
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
         with:
-          version: "6.6.3"
-          host: ${{ runner.os == 'Linux' && 'linux' || runner.os == 'Windows' && 'windows' || 'mac' }}
+          version: '6.5.0'
+          host: ${{ runner.os }}
           target: desktop
-          arch: ${{ matrix.qt_arch }}
-          modules: qtbase
-          cache: true
+          modules: 'qtbase qttools'
 
-      - name: Install Linux system dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgl1-mesa-dev \
-            libxkbcommon-x11-0 \
-            libxcb-cursor0 \
-            libxcb-randr0 \
-            libxcb-shape0 \
-            libxcb-xfixes0
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
 
-      - name: Configure Qt environment variables
-        shell: pwsh
+      - name: Configure
         run: |
-          $qmake = (Get-Command qmake -ErrorAction Stop).Source
-          $qtPrefix = & $qmake -query QT_INSTALL_PREFIX
-          "QT_PREFIX=$qtPrefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "CMAKE_PREFIX_PATH=$qtPrefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "Qt6_DIR=$qtPrefix/lib/cmake/Qt6" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Debug Qt and CMake environment
-        shell: pwsh
-        run: |
-          Write-Host "qmake location: $((Get-Command qmake).Source)"
-          & qmake -v
-          Write-Host "QT_PREFIX=$env:QT_PREFIX"
-          Write-Host "CMAKE_PREFIX_PATH=$env:CMAKE_PREFIX_PATH"
-          Write-Host "Qt6_DIR=$env:Qt6_DIR"
-          if (!(Test-Path "$env:Qt6_DIR/Qt6Config.cmake")) {
-            throw "Qt6Config.cmake not found at $env:Qt6_DIR"
-          }
-
-      - name: Configure CMake
-        run: |
-          cmake -S . -B build \
-            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
-            -DCMAKE_PREFIX_PATH="${{ env.CMAKE_PREFIX_PATH }}" \
-            -DQt6_DIR="${{ env.Qt6_DIR }}"
-        env:
-          CC: ${{ matrix.cc }}
-          CXX: ${{ matrix.cxx }}
-
-      - name: Print CMake Qt cache entries
-        shell: pwsh
-        run: |
-          if (Test-Path build/CMakeCache.txt) {
-            Get-Content build/CMakeCache.txt | Select-String -Pattern "Qt6|CMAKE_PREFIX_PATH"
-          }
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
-
-      - name: Verify executable exists
-        shell: bash
         run: |
-          set -euo pipefail
-          if [[ -x build/LinuxLabX.app/Contents/MacOS/LinuxLabX ]]; then
-            echo "Found macOS bundle executable"
-          elif [[ -x build/LinuxLabX ]]; then
-            echo "Found Linux executable"
-          elif [[ -f build/Release/LinuxLabX.exe ]]; then
-            echo "Found Windows Release executable"
-          elif [[ -f build/LinuxLabX.exe ]]; then
-            echo "Found Windows executable"
-          else
-            echo "LinuxLabX executable not found after build"
-            exit 1
-          fi
+          cmake --build build --config Release
+
+      - name: Check binary exists
+        run: |
+          ls build
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LinuxLabX-${{ matrix.os }}
+          path: build

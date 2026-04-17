@@ -53,19 +53,7 @@ if (APPLE)
     endif()
 endif()
 
-find_package(Qt6 COMPONENTS Core Gui Widgets Network QUIET)
-if (Qt6_FOUND)
-    message(STATUS "Using Qt6")
-    set(QT_LIBS Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Network)
-else()
-    find_package(Qt5 COMPONENTS Core Gui Widgets Network QUIET)
-    if (Qt5_FOUND)
-        message(STATUS "Using Qt5")
-        set(QT_LIBS Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network)
-    else()
-        message(FATAL_ERROR "Neither Qt6 nor Qt5 was found. Set CMAKE_PREFIX_PATH or Qt6_DIR/Qt5_DIR.")
-    endif()
-endif()
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
 
 configure_file(
     ${CMAKE_SOURCE_DIR}/Version.h.in
@@ -127,7 +115,12 @@ target_include_directories(LinuxLabX
         ${CMAKE_BINARY_DIR}/generated
 )
 
-target_link_libraries(LinuxLabX PRIVATE ${QT_LIBS})
+target_link_libraries(LinuxLabX PRIVATE
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
+    Qt6::Network
+)
 target_compile_definitions(LinuxLabX PRIVATE LINUXLABX_HAS_QT_WIDGETS=1)
 
 install(TARGETS LinuxLabX

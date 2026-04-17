@@ -13,7 +13,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            qt_host: linux
+            qt_arch: gcc_64
+          - os: windows-latest
+            qt_host: windows
+            qt_arch: win64_msvc2022_64
+          - os: macos-latest
+            qt_host: mac
+            qt_arch: clang_64
 
     steps:
       - name: Checkout
@@ -22,10 +31,11 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.5.0"
-          host: ${{ matrix.os == 'ubuntu-latest' && 'linux' || matrix.os == 'windows-latest' && 'windows' || 'mac' }}
+          version: "6.6.3"
+          host: ${{ matrix.qt_host }}
           target: desktop
-          modules: "qtbase qttools"
+          arch: ${{ matrix.qt_arch }}
+          modules: "qttools"
           cache: true
 
       - name: Setup CMake

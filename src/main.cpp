@@ -10,6 +10,7 @@
 #include <QDesktopServices>
 #include <QMessageBox>
 #include <QUrl>
+#include <QAbstractButton>   // ✅ IMPORTANT FIX
 #define HAS_QT_DIALOGS 1
 #else
 #define HAS_QT_DIALOGS 0
@@ -22,15 +23,24 @@ int showCrashDialog(const std::string& reason, const std::string& logPath) {
     crashBox.setIcon(QMessageBox::Critical);
     crashBox.setWindowTitle("LinuxLabX");
     crashBox.setText("Something went wrong");
-    crashBox.setInformativeText(QString::fromStdString(reason + "\n\nLog file: " + logPath));
+    crashBox.setInformativeText(
+        QString::fromStdString(reason + "\n\nLog file: " + logPath)
+    );
 
     QPushButton* viewLogs = crashBox.addButton("View logs", QMessageBox::ActionRole);
     crashBox.addButton("Close", QMessageBox::AcceptRole);
+
     crashBox.exec();
 
-    if (crashBox.clickedButton() == viewLogs && !logPath.empty()) {
-        QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(logPath)));
+    // ✅ FIX: correct type handling
+    QAbstractButton* clicked = crashBox.clickedButton();
+
+    if (clicked == reinterpret_cast<QAbstractButton*>(viewLogs) && !logPath.empty()) {
+        QDesktopServices::openUrl(
+            QUrl::fromLocalFile(QString::fromStdString(logPath))
+        );
     }
+
     return 1;
 #else
     std::cerr << "Something went wrong: " << reason << "\n";
@@ -42,7 +52,12 @@ int showCrashDialog(const std::string& reason, const std::string& logPath) {
 
 int main(int argc, char* argv[]) {
     if (argc > 1 && std::string(argv[1]) == "--version") {
-        std::cout << "LinuxLabX " << LINUXLABX_VERSION_STRING << " (" << LINUXLABX_BUILD_TIMESTAMP << ")" << std::endl;
+        std::cout << "LinuxLabX "
+                  << LINUXLABX_VERSION_STRING
+                  << " ("
+                  << LINUXLABX_BUILD_TIMESTAMP
+                  << ")"
+                  << std::endl;
         return 0;
     }
 

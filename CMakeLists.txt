@@ -25,7 +25,7 @@ include(GNUInstallDirs)
 string(TIMESTAMP LINUXLABX_BUILD_TIMESTAMP "%Y-%m-%d %H:%M:%S UTC" UTC)
 
 if (APPLE)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "Minimum macOS deployment target" FORCE)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0" CACHE STRING "Minimum macOS deployment target" FORCE)
 endif()
 
 if (APPLE)
@@ -91,7 +91,17 @@ if (WIN32 AND EXISTS "${APP_ICON_WINDOWS}")
     list(APPEND LINUXLABX_SOURCES "${CMAKE_BINARY_DIR}/generated/windows-icon.rc")
 endif()
 
-add_executable(LinuxLabX ${LINUXLABX_SOURCES})
+add_executable(LinuxLabX MACOSX_BUNDLE
+    src/main.cpp
+    src/parser.cpp
+    src/command_registry.cpp
+    src/errors.cpp
+    src/filesystem.cpp
+    src/executor.cpp
+    src/suggestions.cpp
+    src/ui.cpp
+    src/logging.cpp
+)
 
 set_target_properties(LinuxLabX PROPERTIES
     OUTPUT_NAME "LinuxLabX"

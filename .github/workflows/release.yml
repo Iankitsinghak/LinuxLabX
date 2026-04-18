@@ -32,6 +32,7 @@ jobs:
           target: desktop
           modules: "qtbase qttools"
           cache: true
+          setup-python: "false"
 
       - name: Setup CMake
         uses: lukka/get-cmake@latest

@@ -19,20 +19,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python (Required to download Qt)
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
       - name: Install Qt
-        uses: jurplel/install-qt-action@v4
+        uses: jurplel/install-qt-action@v3
         with:
           version: "6.6.3"
           host: ${{ fromJSON('{"Linux":"linux","Windows":"windows","macOS":"mac"}')[runner.os] }}
           target: desktop
           modules: "qtbase qttools"
           cache: true
-          setup-python: "false"
 
       - name: Setup CMake
         uses: lukka/get-cmake@latest
